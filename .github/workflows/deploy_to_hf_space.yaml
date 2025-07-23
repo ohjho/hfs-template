@@ -22,7 +22,6 @@ jobs:
             echo "push_enabled=true" >> $GITHUB_OUTPUT
           fi
       - name: Checkout repository
-        if: ${{ steps.check_hf_token.outputs.push_enabled == 'true' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -75,6 +74,7 @@ jobs:
       #     fetch-depth: 0
       #     lfs: true
       - name: Push to HuggingFace Space
+        if: ${{ steps.check_hf_token.outputs.push_enabled == 'true' }}
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: git push https://HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/HF_USERNAME/SPACE_NAME main"
