@@ -9,8 +9,24 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Check for HF_TOKEN availability
+        id: check_hf_token
+        env:
+          HF_TOKEN_CHECK: ${{ secrets.HF_TOKEN }} # Pass the secret to an env var for shell check
+        run: |
+          if [ -z "$HF_TOKEN_CHECK" ]; then
+            echo "::notice::HF_TOKEN secret is not set. Hugging Face Space push will be skipped."
+            echo "push_enabled=false" >> $GITHUB_OUTPUT
+          else
+            echo "::notice::HF_TOKEN secret is set. Proceeding with Hugging Face Space push."
+            echo "push_enabled=true" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout repository
+        if: ${{ steps.check_hf_token.outputs.push_enabled == 'true' }}
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -51,26 +67,14 @@ jobs:
             exit 1
           fi
 
-      - name: Check for HF_TOKEN availability
-        id: check_hf_token
-        env:
-          HF_TOKEN_CHECK: ${{ secrets.HF_TOKEN }} # Pass the secret to an env var for shell check
-        run: |
-          if [ -z "$HF_TOKEN_CHECK" ]; then
-            echo "::notice::HF_TOKEN secret is not set. Hugging Face Space push will be skipped."
-            echo "push_enabled=false" >> $GITHUB_OUTPUT
-          else
-            echo "::notice::HF_TOKEN secret is set. Proceeding with Hugging Face Space push."
-            echo "push_enabled=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Push to Hugging Face Space
-        # This step will only run if 'push_enabled' output from the previous step is 'true'
-        if: ${{ steps.check_hf_token.outputs.push_enabled == 'true' }}
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          lfs: true
+      # - name: Get ready to push to HuggingFace Space
+      #   # This step will only run if 'push_enabled' output from the previous step is 'true'
+      #   if: ${{ steps.check_hf_token.outputs.push_enabled == 'true' }}
+      #   uses: actions/checkout@v3
+      #   with:
+      #     fetch-depth: 0
+      #     lfs: true
+      - name: Push to HuggingFace Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: git push https://HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/HF_USERNAME/SPACE_NAME main"
